@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Processing UI</title>
+  
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet">
+  
+  <style>
+    body {
+      margin: 20px;
+    }
+
+    .box {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box" id="fileBox">
+  <h5>1. Upload File</h5>
+  <input type="file" id="fileInput" class="form-control-file" />
+</div>
+
+<div class="box" id="optionsBox" class="hidden">
+  <h5>2. File Options</h5>
+  <form>
+    <div class="form-group">
+      <label for="fileType">File Type:</label>
+      <input type="text" id="fileType" class="form-control" />
+    </div>
+
+    <div class="form-group">
+      <label for="charEncoding">Character Encoding:</label>
+      <input type="text" id="charEncoding" class="form-control" />
+    </div>
+
+    <div class="form-group">
+      <label for="delimiter">Delimiter:</label>
+      <input type="text" id="delimiter" class="form-control" />
+    </div>
+
+    <div class="form-group">
+      <label for="hasHeader">Has Header:</label>
+      <input type="checkbox" id="hasHeader" class="form-check-input" />
+    </div>
+  </form>
+</div>
+
+<div class="box" id="fieldSelectionBox" class="hidden">
+  <h5>3. Field Selection</h5>
+  <div class="row">
+    <div class="col-md-5">
+      <label for="availableFields">Available Fields:</label>
+      <select id="availableFields" multiple class="form-control">
+        <option value="Subcategory">Subcategory</option>
+        <option value="Title">Title</option>
+        <option value="Popularity">Popularity</option>
+        <option value="ProductId">Product Id</option>
+        <option value="Price">Price</option>
+        <option value="Description">Description</option>
+        
+      </select>
+    </div>
+    <div class="col-md-2 text-center">
+      <br>
+      <button onclick="moveSelectedFields('availableFields', 'selectedFields')" class="btn btn-primary">&gt;&gt;</button>
+      <button onclick="moveSelectedFields('selectedFields', 'availableFields')" class="btn btn-primary">&lt;&lt;</button>
+    </div>
+    <div class="col-md-5">
+      <label for="selectedFields">Selected Fields:</label>
+      <select id="selectedFields" multiple class="form-control"></select>
+    </div>
+  </div>
+</div>
+
+<div class="box" id="resultBox" class="hidden">
+  <h5>Result</h5>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Subcategory</th>
+        <th>Title</th>
+        <th>Popularity</th>
+        <th>Product Id</th>
+        <th>Price</th>
+        <th>Description</th>
+        
+      </tr>
+    </thead>
+    <tbody id="resultBody"></tbody>
+  </table>
+</div>
+
+<!-- Bootstrap JS and jQuery -->
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+
+<script>
+  function moveSelectedFields(fromId, toId) {
+    const fromSelect = $(`#${fromId}`);
+    const toSelect = $(`#${toId}`);
+
+    $(`#${fromId} option:selected`).appendTo(`#${toId}`);
+  }
+
+  $('#hasHeader').change(function () {
+    const fieldSelectionBox = $('#fieldSelectionBox');
+    if (this.checked) {
+      fieldSelectionBox.removeClass('hidden');
+    } else {
+      fieldSelectionBox.addClass('hidden');
+    }
+  });
+
+  $('#fileInput').change(function () {
+    
+    const fileType = 'CSV';
+    const charEncoding = 'UTF-8';
+    const delimiter = ',';
+
+    $('#fileType').val(fileType);
+    $('#charEncoding').val(charEncoding);
+    $('#delimiter').val(delimiter);
+
+    $('#optionsBox').removeClass('hidden');
+    if ($('#hasHeader').prop('checked')) {
+      $('#fieldSelectionBox').removeClass('hidden');
+    } else {
+      $('#fieldSelectionBox').addClass('hidden');
+    }
+  });
+
+  // Display result
+  $('#hasHeader, #selectedFields').change(function () {
+    const hasHeader = $('#hasHeader').prop('checked');
+    const selectedFields = $('#selectedFields').val() || [];
+
+    
+    const jsonData = {
+      "count": 1000,
+      "products": {
+        "6834": {
+          "subcategory": "mobile",
+          "title": "Micromax Canvas Spark",
+          "price": "4999",
+          "popularity": "51936"
+        },
+        "5530": {
+          "subcategory": "mobile",
+          "title": "Samsung Galaxy Grand Max",
+          "price": "12950",
+          "popularity": "48876"
+        }
+        
+      }
+    };
+
+    // Filter and sort the data
+    const filteredData = filterAndSortData(jsonData.products, selectedFields);
+
+    // Display the result
+    displayResult(filteredData);
+
+    // Show result box
+    $('#resultBox').removeClass('hidden');
+  });
+
+  function filterAndSortData(data, selectedFields) {
+    const dataArray = Object.values(data);
+
+    // Filter entries based on selected fields
+    const filteredData = dataArray.map(entry => {
+      const filteredEntry = {};
+      selectedFields.forEach(field => {
+        filteredEntry[field] = entry[field];
+      });
+      return filteredEntry;
+    });
+
+    // Sort entries in descending order of popularity
+    filteredData.sort((a, b) => b.popularity - a.popularity);
+
+    return filteredData;
+  }
+
+  function displayResult(filteredData) {
+    const resultBody = $('#resultBody');
+    resultBody.empty();
+
+    filteredData.forEach(entry => {
+      const row = $('<tr>');
+      Object.values(entry
